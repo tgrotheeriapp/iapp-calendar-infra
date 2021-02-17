@@ -1,0 +1,30 @@
+pipeline:
+  type: cft
+  # (Optional) The directory path (within repo) where to start from for the build [default = cloudformation]
+  build_dir: cloudformation
+  # (Optional) The path to the build file to override the default build file
+  build_file:
+# Metadata information about the resource
+catalog:
+  # (Required) The name of the organization that is responsible for managing the product (iapp unless managed by a 3rd party)
+  organization: iapp
+  # (Required) The name of the portfolio that identifies its products, applications, and components
+  portfolio: aws
+  # (Required) The name of the product that identifies its applications and components
+  product: myportfolio
+  # (Required) The name of the application (or service module) that identifies its components
+  application: myapp
+  # (Optional) The name of the component that aligns with the application or service module
+  component: infrastructure
+  # (Required) The name of the department that owns the resource
+  department: tech
+  # (Optional) The email address of the support team to contact
+  support_email: dsietz@iapp.org
+# Metadata information about the resource
+code:
+  # (Required) The location (url) where to find the source code
+  sourcecode_url: https://github.com/PrivacyAssociation/cft-project
+# (Optional) A list (array) of template files (including extension) to build and deploy in the order specified
+queue:
+  - application-myapp.yaml
+  - api-myapp.yaml

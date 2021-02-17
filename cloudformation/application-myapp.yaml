@@ -1,0 +1,98 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: This template provides the registration of an application into the IAPP cloud inventory
+Parameters:
+  pOrganization:
+    Description: The name of the portfolio that identifies its products, applications, and components
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.organization }}
+  pPortfolio:
+    Description: The name of the portfolio that identifies its products, applications, and components
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.portfolio }}
+  pProduct:
+    Description: The name of the product that identifies its applications and components
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.product }}
+  pApplication:
+    Description: The name of the application (or service module) that identifies its components
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.application }}
+  pComponent:
+    Description: The name of the component that aligns with the application or service module
+    Type: String
+    MinLength: 0
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.component }}
+  pDepartment:
+    Description: The name of the department that owns the resource
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.department }}
+  pEnvironment:
+    Description: 'The name of the environment in which the resource is running (e.g.: sandbox, development, test, production)'
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.aws.environment }}
+  pSupportEmail:
+    Description: The email address of the support team to contact
+    Type: String
+    MinLength: 8
+    MaxLength: 30
+    AllowedPattern: (?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])
+    Default: ${{ iapp.catalog.support_email }}
+  pSourceCodeURL:
+    Description: The location where the source code resides
+    Type: String 
+    Default: ${{ iapp.code.sourcecode_url }}
+Resources:    
+  rApp:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: 
+        !ImportValue shared:guardrails:app-config:arn
+      Action: UPSERT
+      Name: !Ref pApplication
+      Description: 'A live conferencing (streaming) platform'
+      Environment: !Ref pEnvironment
+      UserPoolId: 
+        !ImportValue shared:guardrails:nonhuman-user-pool:id
+      CardCatalog:
+        Department: !Ref pDepartment
+        Organization: !Ref pOrganization
+        Portfolio: !Ref pPortfolio
+        SupportEmail: !Ref pSupportEmail
+        Product: !Ref pProduct
+        Environment: !Ref pEnvironment
+        Component: !Ref pComponent
+        Application: !Ref pApplication 
+Outputs:
+  AppId:
+    Description: The AppConfig ID for the registered application
+    Value: !GetAtt rApp.Id
+  AppSecretArn:
+    Description: The AWS arn for the default password for the registered application
+    Value: !GetAtt rApp.SecretArn
+    Export:
+      Name: !Sub "shared:${pApplication}:${pEnvironment}:secret:arn"  
+  SourceCode:
+    Description: The location of the source code for this CFT
+    Value: !Ref pSourceCodeURL 

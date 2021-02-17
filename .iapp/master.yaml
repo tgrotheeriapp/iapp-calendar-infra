@@ -1,0 +1,14 @@
+pipeline:
+  release_lvl: general-release
+  release_vrs: v0.0.1
+aws:
+  # (Required) The AWS region to use
+  region: us-east-1
+  # (Required) The number of the AWS Account to use
+  account: 298049552655
+  # (Required) The name of the environment to use
+  environment: production
+  # (Required) The name of the domain, (e.g.: myapp-api). Leave blank if no custom domain name is needed.
+  domain: ''
+  # (Optional) The AWS arn of the certificate used by the api. Must be provided if the domain name is set
+  certarn: arn:aws:acm:us-east-1:298049552655:certificate/d6bc89eb-dc5c-42f3-b285-450b3926be01

@@ -1,0 +1,577 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: This template provides an API for managing the application web services
+Parameters:
+  pOrganization:
+    Description: The name of the portfolio that identifies its products, applications, and components
+    Type: String
+    MinLength: 1
+    MaxLength: 30
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.organization }}
+  pPortfolio:
+    Description: The name of the portfolio that identifies its products, applications, and components
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.portfolio }}
+  pProduct:
+    Description: The name of the product that identifies its applications and components
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.product }}
+  pApplication:
+    Description: The name of the application (or service module) that identifies its components
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.application }}
+  pComponent:
+    Description: The name of the component that aligns with the application or service module
+    Type: String
+    MinLength: 0
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.component }}
+  pDepartment:
+    Description: The name of the department that owns the resource
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.catalog.department }}
+  pEnvironment:
+    Description: 'The name of the environment in which the resource is running (e.g.: sandbox, development, test, production)'
+    Type: String
+    MinLength: 1
+    MaxLength: 15
+    AllowedPattern: '[a-zA-Z0-9\-]*'
+    Default: ${{ iapp.aws.environment }}
+  pSupportEmail:
+    Description: The email address of the support team to contact
+    Type: String
+    MinLength: 8
+    MaxLength: 30
+    AllowedPattern: (?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])
+    Default: ${{ iapp.catalog.support_email }}
+  pReleaseTag:
+    Description: 'The name of the release to pull the code from'
+    Type: String
+    MinLength: 1
+    MaxLength: 80    
+    Default: ${{ iapp.pipeline.release_vrs }}
+  pArtifactName:
+    Description: 'The name of the artifact that is the source code for the functions, (e.g.: myapp_serverless.zip)'
+    Type: String
+    MinLength: 1
+    MaxLength: 80
+    Default: 'myapp_serverless.zip'
+  pDomainName:
+    Description: 'The domain name to use for the API service. This is optional adn can be left empty.'
+    Type: String
+    Default: ${{ iapp.aws.domain }}
+  pCertificateArn:
+    Description: The AWS arn for the certificate used by the API 
+    Type: String
+    Default: ${{ iapp.aws.certarn }}
+  pSourceCodeURL:
+    Description: The location where the source code resides
+    Type: String 
+    Default: ${{ iapp.code.sourcecode_url }}
+Mappings: 
+  LkpReleaseLvl: 
+    sandbox: 
+      ReleaseLvl: 'pre-alpha'
+    development: 
+      ReleaseLvl: 'alpha'
+    test: 
+      ReleaseLvl: 'beta'
+    uat: 
+      ReleaseLvl: 'release-candidate'
+    production: 
+      ReleaseLvl: 'general-release'
+Conditions:
+  HasCustomDomainName:
+    Fn::Not:
+    - Fn::Equals:
+      - ''
+      - Ref: pDomainName
+Globals:
+  Function:
+    Runtime: nodejs10.x
+    Timeout: 30
+    MemorySize: 128
+Resources:  
+  # database
+  rDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${pOrganization}-${pApplication}-${pEnvironment}-example"      
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: _id
+        AttributeType: S
+      - AttributeName: field1
+        AttributeType: S
+      - AttributeName: field2
+        AttributeType: N
+      - AttributeName: field3
+        AttributeType: B
+      KeySchema:
+      - AttributeName: _id
+        KeyType: HASH
+      GlobalSecondaryIndexes:
+      - IndexName: idx_field1
+        KeySchema:
+        - AttributeName: field1
+          KeyType: HASH
+        Projection:
+          ProjectionType: ALL 
+      - IndexName: idx_field2
+        KeySchema:
+        - AttributeName: field2
+          KeyType: HASH
+        Projection:
+          ProjectionType: ALL   
+      - IndexName: idx_field3
+        KeySchema:
+        - AttributeName: field3
+          KeyType: HASH
+        Projection:
+          ProjectionType: ALL   
+      SSESpecification:
+        SSEEnabled: True
+      Tags: 
+        - 
+          Key: "Name"
+          Value:
+            !Sub "${pOrganization}-${pApplication}-${pEnvironment}-example"
+        - 
+          Key: "iapp-organization"
+          Value: 
+            !Ref pOrganization
+        - 
+          Key: "iapp-portfolio"
+          Value: 
+            !Ref pPortfolio
+        - 
+          Key: "iapp-product"
+          Value: 
+            !Ref pProduct
+        - 
+          Key: "iapp-application"
+          Value: 
+            !Ref pApplication
+        - 
+          Key: "iapp-component"
+          Value:
+            !Ref pComponent
+        - 
+          Key: "iapp-department"
+          Value:
+            !Ref pDepartment
+        - 
+          Key: "iapp-environment"
+          Value:
+            !Ref pEnvironment
+        - 
+          Key: "iapp-support-email"
+          Value:
+            !Ref pSupportEmail 
+  # API 
+  rAPIKey:
+    DependsOn:
+      - rRestApi
+      - rAuthDeployment
+    Type: AWS::ApiGateway::ApiKey
+    Properties: 
+      Description: 
+        !Sub "The API key required to access the ${pApplication} services"
+      Name:
+        !Sub "${pOrganization}-${pApplication}-${pEnvironment}-apikey"
+      Enabled: true
+      StageKeys: 
+        - 
+          RestApiId: 
+            !Ref rRestApi
+          StageName: 
+            !Ref pEnvironment
+      Tags: 
+        - 
+          Key: "Name"
+          Value:
+            !Sub "${pOrganization}-${pApplication}-${pEnvironment}-apikey"
+        - 
+          Key: "iapp-organization"
+          Value: 
+            !Ref pOrganization
+        - 
+          Key: "iapp-portfolio"
+          Value: 
+            !Ref pPortfolio
+        - 
+          Key: "iapp-product"
+          Value: 
+            !Ref pProduct
+        - 
+          Key: "iapp-application"
+          Value: 
+            !Ref pApplication
+        - 
+          Key: "iapp-component"
+          Value:
+            !Ref pComponent
+        - 
+          Key: "iapp-department"
+          Value:
+            !Ref pDepartment
+        - 
+          Key: "iapp-environment"
+          Value:
+            !Ref pEnvironment
+        - 
+          Key: "iapp-support-email"
+          Value:
+            !Ref pSupportEmail 
+  rAPIUsagePlan:
+    DependsOn:
+      - rRestApi
+      - rAuthDeployment
+    Type: AWS::ApiGateway::UsagePlan
+    Properties: 
+      UsagePlanName: 
+        !Sub "Normal Usage Plan for ${pApplication}"
+      Description: 
+        !Sub "Plan that represents the expected usage of the ${pApplication} API"
+      ApiStages: 
+        - 
+          ApiId: 
+            !Ref rRestApi
+          Stage:
+            !Ref pEnvironment
+      # The maximum number of permitted requests per day is 86400 (1 request per second)
+      # Change this setting to control AWS costs and prevent costly DDOS attacks
+      Quota:
+        Limit: 86400
+        Offset: 0
+        Period: DAY
+      Tags:
+        - 
+          Key: "Name"
+          Value:
+            !Sub "${pOrganization}-${pApplication}-${pEnvironment}-api-usageplan"
+        - 
+          Key: "iapp-organization"
+          Value: 
+            !Ref pOrganization
+        - 
+          Key: "iapp-portfolio"
+          Value: 
+            !Ref pPortfolio
+        - 
+          Key: "iapp-product"
+          Value: 
+            !Ref pProduct
+        - 
+          Key: "iapp-application"
+          Value: 
+            !Ref pApplication
+        - 
+          Key: "iapp-component"
+          Value:
+            !Ref pComponent
+        - 
+          Key: "iapp-department"
+          Value:
+            !Ref pDepartment
+        - 
+          Key: "iapp-environment"
+          Value:
+            !Ref pEnvironment
+        - 
+          Key: "iapp-support-email"
+          Value:
+            !Ref pSupportEmail 
+  rAPIUsagePlanKey:
+    DependsOn:
+      - rAPIKey
+      - rAPIUsagePlan
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties: 
+      KeyType: API_KEY
+      KeyId: 
+        !Ref rAPIKey
+      UsagePlanId: 
+        !Ref rAPIUsagePlan
+  rRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name:
+        !Sub "${pOrganization}-${pApplication}-${pEnvironment}-api"
+      StageName: 
+        !Ref pEnvironment
+      #Domain:
+      #  #Fn::If: 
+      #  #- HasCustomDomainName
+      #  #-
+      #  DomainName:
+      #    !Sub "${pDomainName}-${pEnvironment}"
+      #  BasePath: 
+      #    - /hello
+      #  CertificateArn: 
+      #    !Ref pCertificateArn
+      #  #- !Ref AWS::NoValue
+      Auth:
+        AddDefaultAuthorizerToCorsPreflight: true
+        ApiKeyRequired: true
+        Authorizers: 
+          AppCognitoAuthorizer:
+            UserPoolArn: 
+              Fn::ImportValue: shared:guardrails:nonhuman-user-pool:arn
+        DefaultAuthorizer: AppCognitoAuthorizer
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: '''Content-Type,Authorization,Access-Control-Allow-Headers,Access-Control-Allow-Origin,Access-Control-Allow-Methods,Origin'''
+        MaxAge: '''3600'''
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: '''Content-Type,Authorization,Access-Control-Allow-Headers,Access-Control-Allow-Origin,Access-Control-Allow-Methods,Origin'''
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: '''Content-Type,Authorization,Access-Control-Allow-Headers,Access-Control-Allow-Origin,Access-Control-Allow-Methods,Origin'''
+      Models:
+        Error:
+          type: object
+          properties:
+            message:
+              type: string
+    Tags: 
+      - 
+        Key: "Name"
+        Value:
+          !Sub "${pOrganization}-${pApplication}-${pEnvironment}-api"
+      - 
+        Key: "iapp-organization"
+        Value: 
+          !Ref pOrganization
+      - 
+        Key: "iapp-portfolio"
+        Value: 
+          !Ref pPortfolio
+      - 
+        Key: "iapp-product"
+        Value: 
+          !Ref pProduct
+      - 
+        Key: "iapp-application"
+        Value: 
+          !Ref pApplication
+      - 
+        Key: "iapp-component"
+        Value:
+          !Ref pComponent
+      - 
+        Key: "iapp-department"
+        Value:
+          !Ref pDepartment
+      - 
+        Key: "iapp-environment"
+        Value:
+          !Ref pEnvironment
+      - 
+        Key: "iapp-support-email"
+        Value:
+          !Ref pSupportEmail 
+  # Roles
+  rLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName:
+        !Sub "${pOrganization}-${pApplication}-${pEnvironment}-api"
+      Description: 
+        !Sub "The role for calling the lambda functions for the ${pApplication} application"
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+  rLambdaProfile:
+    Type: AWS::IAM::InstanceProfile
+    DependsOn:
+      - rLambdaRole
+    Properties:
+      Path: /
+      Roles:
+      - !Ref rLambdaRole  
+  rLambdaRolePolicy:
+    Type: AWS::IAM::Policy
+    DependsOn:
+      - rLambdaRole
+      - rLambdaProfile
+    Properties:
+      PolicyName: 
+        !Sub "${pOrganization}-${pApplication}-${pEnvironment}-api"
+      Roles:
+        - !Ref rLambdaRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - 
+            Sid: "CrossAccountRolePassing"
+            Effect: "Allow"
+            Action:
+              - sts:AssumeRole
+              - iam:GetRole
+              - iam:PassRole
+            Resource:
+              - "*"
+          - 
+            Sid: "DatabasePermissions"
+            Effect: "Allow"
+            Action:
+              - dynamodb:*
+            Resource: 
+              - !GetAtt rDBTable.Arn  
+  # Functions
+  rIndexLambda:
+    DependsOn:
+      - rLambdaRole
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handlers.index
+      Timeout: 300
+      Role: 
+        !GetAtt rLambdaRole.Arn
+      CodeUri: 
+        Bucket: iapp-artifact-repository
+        Key:
+          #artifacts/iapp/aws/myportfolio/myapp/builds/Sandbox-Pipeline-5/myapp_serverless.zip
+          Fn::Sub:
+            - "releases/${pReleaseTag}/${RelLvl}/${pArtifactName}"
+            - RelLvl:
+                !FindInMap
+                  - LkpReleaseLvl
+                  - !Ref pEnvironment
+                  - ReleaseLvl
+      Environment:
+        Variables:
+          MYAPP_ENV_VAR: "My environment variable value"
+          DB_TABLE_NAME:
+            Ref: rDBTable
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET
+            RestApiId:
+              Ref: rRestApi
+  # Logging
+  rAPILogGrp:
+    DependsOn:
+      - rIndexLambda
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: 
+        !Join 
+          - ""
+          - - "/aws/lambda/"
+            - !Ref rIndexLambda
+      RetentionInDays: 30
+  # Deployment
+  rAuthDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - rRestApi
+      - rIndexLambda
+      - rAPILogGrp
+    Properties: 
+      RestApiId: 
+        !Ref rRestApi
+      Description: Deploy the Auth API so it is active
+      StageName: 
+        !Ref pEnvironment
+      StageDescription:
+        Description: 
+          !Sub "${pEnvironment} staging"
+        AccessLogSetting: 
+          DestinationArn: 
+            !GetAtt rAPILogGrp.Arn
+          Format: >-
+            {"requestId":"$context.requestId", "ip": "$context.identity.sourceIp",
+            "caller":"$context.identity.caller",
+            "user":"$context.identity.user","requestTime":"$context.requestTime",
+            "eventType":"$context.eventType","routeKey":"$context.routeKey",
+            "status":"$context.status","connectionId":"$context.connectionId"}        
+        CachingEnabled: false
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 10
+        DataTraceEnabled: false
+        LoggingLevel: INFO
+        MetricsEnabled: true
+        Tags: 
+          - 
+            Key: "Name"
+            Value:
+              !Sub "${pOrganization}-${pApplication}-${pEnvironment}-stream"
+          - 
+            Key: "iapp-organization"
+            Value: 
+              !Ref pOrganization
+          - 
+            Key: "iapp-portfolio"
+            Value: 
+              !Ref pPortfolio
+          - 
+            Key: "iapp-product"
+            Value: 
+              !Ref pProduct
+          - 
+            Key: "iapp-application"
+            Value: 
+              !Ref pApplication
+          - 
+            Key: "iapp-component"
+            Value:
+              !Ref pComponent
+          - 
+            Key: "iapp-department"
+            Value:
+              !Ref pDepartment
+          - 
+            Key: "iapp-environment"
+            Value:
+              !Ref pEnvironment
+          - 
+            Key: "iapp-support-email"
+            Value:
+              !Ref pSupportEmail
+Outputs:
+  ApiURL:
+    Description: API endpoint URL for Prod environment
+    Value: 
+      Fn::If: 
+        - HasCustomDomainName
+        - Fn::Sub: https://${pDomainName}-${pEnvironment}.execute-api.${AWS::Region}.amazonaws.com/${pEnvironment}/
+        - Fn::Sub: https://${rRestApi}.execute-api.${AWS::Region}.amazonaws.com/${pEnvironment}/
+  ApiApiKey:
+    Description: The API key resource ID that contains the api key value used to access the services
+    Value:
+      !Ref rAPIKey
+  SourceCode:
+    Description: The location of the source code for this CFT
+    Value: !Ref pSourceCodeURL 
