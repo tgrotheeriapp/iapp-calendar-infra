@@ -1,8 +1,7 @@
-# iapp-calendar-app-template.yaml
+# iapp-calendar-app.yaml
 
 ## Resource Types
 + [Custom::String](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-cfn-customresource.html)
-
 
 ## Template Parameters
 | Parameter                 | Type    | Description                                                                                                 |
