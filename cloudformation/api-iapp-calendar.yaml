@@ -469,7 +469,7 @@ Resources:
                   - ReleaseLvl
       Environment:
         Variables:
-          IAPP_CALENDAR_APP_ENV_VAR: "My environment variable value"
+          IAPP_CALENDAR_ENV_VAR: "My environment variable value"
           DB_TABLE_NAME:
             Ref: rDBTable
       Events:
