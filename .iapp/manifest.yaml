@@ -13,7 +13,7 @@ catalog:
   # (Required) The name of the product that identifies its applications and components
   product: myportfolio
   # (Required) The name of the application (or service module) that identifies its components
-  application: myapp
+  application: iapp-calendar-app
   # (Optional) The name of the component that aligns with the application or service module
   component: infrastructure
   # (Required) The name of the department that owns the resource
@@ -26,5 +26,5 @@ code:
   sourcecode_url: https://github.com/PrivacyAssociation/cft-project
 # (Optional) A list (array) of template files (including extension) to build and deploy in the order specified
 queue:
-  - application-myapp.yaml
-  - api-myapp.yaml
+  - application-iapp-calendar-app.yaml
+  - api-iapp-calendar-app.yaml

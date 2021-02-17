@@ -54,7 +54,7 @@ aws:
   account: xxxxxxxxxx
   # (Required) The name of the environment to use
   environment: development
-  # (Required) The name of the domain, (e.g.: myapp-api). Leave blank if no custom domain name is needed.
+  # (Required) The name of the domain, (e.g.: iapp-calendar-app-api). Leave blank if no custom domain name is needed.
   domain: ''  
   # (Optional) The AWS arn of the certificate used by the api. Must be provided if the domain name is set
   certarn: arn:aws:acm:us-east-1:xxxxxxxxxxxxx:certificate/yyyyyyyy-yyyyyyyyyyyyy-yyyyyyyyyy
