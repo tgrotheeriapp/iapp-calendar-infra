@@ -1,4 +1,4 @@
-# api-iapp-calendar-app.yaml
+# api-iapp-calendar.yaml
 
 ## Resource Types
 + [AWS::ApiGateway::Deployment](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-deployment.html)

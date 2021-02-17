@@ -66,11 +66,11 @@ Parameters:
     MaxLength: 80    
     Default: ${{ iapp.pipeline.release_vrs }}
   pArtifactName:
-    Description: 'The name of the artifact that is the source code for the functions, (e.g.: iapp-calendar-app_serverless.zip)'
+    Description: 'The name of the artifact that is the source code for the functions, (e.g.: application-iapp-calendar_serverless.zip)'
     Type: String
     MinLength: 1
     MaxLength: 80
-    Default: 'iapp-calendar-app_serverless.zip'
+    Default: 'application-iapp-calendar_serverless.zip'
   pDomainName:
     Description: 'The domain name to use for the API service. This is optional adn can be left empty.'
     Type: String
@@ -459,7 +459,7 @@ Resources:
       CodeUri: 
         Bucket: iapp-artifact-repository
         Key:
-          #artifacts/iapp/aws/myportfolio/iapp-calendar-app/builds/Sandbox-Pipeline-5/iapp-calendar-app_serverless.zip
+          #artifacts/iapp/aws/myportfolio/iapp-calendar/builds/Sandbox-Pipeline-5/application-iapp-calendar_serverless.zip
           Fn::Sub:
             - "releases/${pReleaseTag}/${RelLvl}/${pArtifactName}"
             - RelLvl:
